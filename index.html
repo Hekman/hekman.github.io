@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Erik Hekman</title>
+<meta name="description" content="Erik Hekman — personal bio. A new composition on every visit.">
+<style>
+  :root {
+    --ink: #111111;
+    --paper: #f4f1ea;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- menu bar ---------- */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    border-bottom: 2px solid var(--ink);
+    background: var(--paper);
+    z-index: 100;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+  }
+  nav .brand {
+    font-weight: 700;
+    text-transform: lowercase;
+    letter-spacing: -0.02em;
+    font-size: 15px;
+  }
+  nav ul {
+    display: flex;
+    gap: 28px;
+    list-style: none;
+  }
+  nav a {
+    color: var(--ink);
+    text-decoration: none;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  nav a:hover { text-decoration: underline; text-underline-offset: 4px; }
+  nav .regen {
+    cursor: pointer;
+    border: 2px solid var(--ink);
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-weight: 700;
+    padding: 4px 12px;
+    text-transform: uppercase;
+  }
+  nav .regen:hover { background: var(--ink); color: var(--paper); }
+
+  /* ---------- stage ---------- */
+  #stage {
+    position: fixed;
+    inset: 52px 0 0 0;
+    overflow: hidden;
+  }
+  .abs { position: absolute; }
+  .word {
+    font-weight: 700;
+    letter-spacing: -0.06em;
+    line-height: 0.78;
+    white-space: nowrap;
+    user-select: none;
+  }
+  .tag {
+    font-size: 11px;
+    line-height: 1.45;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    max-width: 220px;
+  }
+  .tag b { display: block; font-size: 12px; }
+  .rule { background: var(--ink); }
+  .num {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+  }
+  footer {
+    position: fixed;
+    left: 20px; right: 20px; bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    z-index: 100;
+    pointer-events: none;
+  }
+  @media (max-width: 640px) {
+    nav ul { gap: 16px; }
+    nav { font-size: 11px; padding: 0 12px; }
+    .tag { max-width: 150px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">erik hekman</span>
+  <ul>
+    <li><a href="#projects">Projects</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <button class="regen" onclick="generate()" title="New composition">&#8635;&nbsp;Reload</button>
+</nav>
+
+<div id="stage"></div>
+
+<footer>
+  <span id="f-left"></span>
+  <span id="f-right"></span>
+</footer>
+
+<script>
+/* ============================================================
+   Erik Hekman — generative Swiss / Bauhaus bio page
+   Every visit composes a new poster. No dependencies.
+   ============================================================ */
+
+const NAME = ["erik", "hekman"];
+const rnd  = (a, b) => a + Math.random() * (b - a);
+const ri   = (a, b) => Math.floor(rnd(a, b + 1));
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const chance = p => Math.random() < p;
+
+/* ---------- palettes (paper, ink, accents[]) ---------- */
+const PALETTES = [
+  { name: "fiat",     paper: "#f4f1ea", ink: "#111111", acc: ["#e63329", "#0072bb", "#111111"] },
+  { name: "bauhaus",  paper: "#efe8d8", ink: "#181818", acc: ["#d02c2f", "#f0c808", "#1f5fa9"] },
+  { name: "signal",   paper: "#ffffff", ink: "#0f0f0f", acc: ["#ff3b1f", "#0f0f0f", "#0f0f0f"] },
+  { name: "kieler",   paper: "#f6f3ec", ink: "#12224e", acc: ["#12224e", "#e8442e", "#f2b705"] },
+  { name: "noir",     paper: "#141414", ink: "#f4f1ea", acc: ["#e63329", "#f4f1ea", "#f0c808"] },
+  { name: "lancha",   paper: "#f2ede2", ink: "#1a1a1a", acc: ["#e94f1d", "#f2a71b", "#2a9d8f"] },
+  { name: "gitanes",  paper: "#1f5fa9", ink: "#f4f1ea", acc: ["#f4f1ea", "#f0c808", "#111111"] },
+];
+
+const STRIPES = ["#7b2d8b", "#3b4fa0", "#2a9d8f", "#8ab833", "#f2c012", "#ef7d1a", "#e8442e"];
+
+const ROLES = [
+  "designer &amp; developer", "interaction design", "media technology",
+  "design research", "creative technologist", "typography &amp; code"
+];
+
+let stage, P;
+
+function el(cls, css, html) {
+  const d = document.createElement("div");
+  if (cls) d.className = cls;
+  Object.assign(d.style, css);
+  if (html !== undefined) d.innerHTML = html;
+  stage.appendChild(d);
+  return d;
+}
+
+function word(text, css) {
+  return el("abs word", Object.assign({ position: "absolute" }, css), text);
+}
+
+function infoTag(css) {
+  const role = pick(ROLES);
+  return el("abs tag", Object.assign({ position: "absolute" }, css),
+    "<b>Erik Hekman</b>" + role + "<br>&#8600; a new page on every reload");
+}
+
+function W() { return stage.clientWidth; }
+function H() { return stage.clientHeight; }
+
+/* ============ composition 1: fiat stack ============ */
+/* name repeated, tightly stacked, cropped, colored     */
+function compStack() {
+  const n = ri(3, 4);
+  const size = H() / (n * 0.62);
+  const wordText = pick([NAME[1], NAME[0], NAME.join("")]);
+  const x = rnd(-0.25, 0.02) * W();
+  for (let i = 0; i < n; i++) {
+    const c = P.acc[i % P.acc.length];
+    word(wordText, {
+      left: x + "px",
+      top: (i * size * 0.62 - size * 0.16) + "px",
+      fontSize: size + "px",
+      color: c,
+      letterSpacing: "-0.07em",
+    });
+    el("abs num", {
+      position: "absolute",
+      right: "24px",
+      top: (i * size * 0.62 + size * 0.18) + "px",
+      color: P.ink,
+    }, String(1962 + ri(0, 60)));
+  }
+  infoTag({
+    left: rnd(0.55, 0.7) * W() + "px",
+    top: rnd(0.08, 0.18) * H() + "px",
+    background: P.paper,
+    color: P.ink,
+    padding: "10px 12px",
+    outline: "1px solid " + P.ink,
+    zIndex: 10,
+  });
+}
+
+/* ============ composition 2: giant crop ============ */
+/* one enormous word bleeding off the page              */
+function compGiant() {
+  const big = pick(NAME);
+  const other = big === NAME[0] ? NAME[1] : NAME[0];
+  const size = rnd(0.55, 0.9) * W() / (big.length * 0.42);
+  word(big, {
+    left: rnd(-0.15, 0.05) * W() + "px",
+    top: rnd(0.15, 0.45) * H() + "px",
+    fontSize: size + "px",
+    color: pick(P.acc),
+    letterSpacing: "-0.08em",
+  });
+  word(other, {
+    left: rnd(0.05, 0.4) * W() + "px",
+    top: rnd(0.02, 0.1) * H() + "px",
+    fontSize: size * rnd(0.16, 0.26) + "px",
+    color: P.ink,
+    letterSpacing: "-0.04em",
+  });
+  // one lone accent letter, oversized, offset — like the red "a"
+  const letter = pick(big.split(""));
+  word(letter, {
+    left: rnd(0.55, 0.8) * W() + "px",
+    top: rnd(-0.12, 0.05) * H() + "px",
+    fontSize: size * rnd(0.7, 1.0) + "px",
+    color: pick(P.acc),
+    zIndex: 2,
+    opacity: 0.94,
+  });
+  infoTag({
+    left: rnd(0.6, 0.72) * W() + "px",
+    top: rnd(0.68, 0.8) * H() + "px",
+    color: P.ink,
+  });
+  el("abs rule", { position: "absolute", left: "24px", bottom: "24px",
+    width: rnd(0.2, 0.5) * W() + "px", height: "10px", background: P.ink });
+}
+
+/* ============ composition 3: bauhaus geometry ============ */
+function compBauhaus() {
+  const shapes = ri(5, 8);
+  for (let i = 0; i < shapes; i++) {
+    const c = pick(P.acc);
+    const s = rnd(0.08, 0.3) * Math.min(W(), H());
+    const css = {
+      position: "absolute",
+      left: rnd(-0.05, 0.85) * W() + "px",
+      top: rnd(-0.05, 0.85) * H() + "px",
+      width: s + "px",
+      background: c,
+      opacity: chance(0.3) ? 0.55 : 0.92,
+    };
+    const kind = pick(["circle", "rect", "bar"]);
+    if (kind === "circle") { css.height = s + "px"; css.borderRadius = "50%"; }
+    else if (kind === "rect") { css.height = s * rnd(0.5, 1.4) + "px"; }
+    else { css.height = s * 0.18 + "px"; css.transform = "rotate(" + pick([0, 45, -45, 90]) + "deg)"; }
+    el("abs", css);
+  }
+  // rotated name, reading up the page
+  word(NAME.join(" "), {
+    left: rnd(0.1, 0.5) * W() + "px",
+    top: rnd(0.5, 0.7) * H() + "px",
+    fontSize: Math.min(W(), H()) * rnd(0.1, 0.16) + "px",
+    color: P.ink,
+    transform: "rotate(" + pick([-90, -45, -30]) + "deg)",
+    transformOrigin: "left top",
+    zIndex: 5,
+  });
+  el("abs tag", {
+    position: "absolute",
+    left: rnd(0.62, 0.75) * W() + "px",
+    top: rnd(0.15, 0.3) * H() + "px",
+    transform: "rotate(90deg)",
+    transformOrigin: "left top",
+    color: P.ink,
+    zIndex: 5,
+  }, "<b>1988 &#8211; &#8734;</b>" + pick(ROLES));
+}
+
+/* ============ composition 4: lancha stripes ============ */
+function compStripes() {
+  word(pick([NAME[0], NAME[1], NAME.join(" ")]), {
+    left: "24px",
+    top: "28px",
+    fontSize: Math.min(W() * 0.16, 150) + "px",
+    color: P.ink,
+    letterSpacing: "-0.05em",
+    zIndex: 5,
+  });
+  el("abs tag", { position: "absolute", left: "28px",
+    top: Math.min(W() * 0.16, 150) * 0.95 + 34 + "px", color: P.ink, zIndex: 5 },
+    pick(ROLES) + "<br>'" + String(new Date().getFullYear()).slice(2));
+  const angle = pick([-24, -18, 18, 24]);
+  const bandY = rnd(0.42, 0.6) * H();
+  const h = rnd(16, 34);
+  const stripes = chance(0.5) ? STRIPES : P.acc.concat(P.acc).concat(P.acc);
+  const count = ri(5, 7);
+  for (let i = 0; i < count; i++) {
+    el("abs", {
+      position: "absolute",
+      left: "-20%",
+      top: bandY + i * h + "px",
+      width: "140%",
+      height: h - 2 + "px",
+      background: stripes[i % stripes.length],
+      transform: "rotate(" + angle + "deg)",
+    });
+  }
+  el("abs num", { position: "absolute", right: "24px", bottom: "20px",
+    fontSize: "40px", fontWeight: "700", color: P.ink }, ri(1, 9) + "");
+}
+
+/* ============ composition 5: strict grid ============ */
+function compGrid() {
+  const cols = 6;
+  const gw = W() / cols;
+  // faint grid lines
+  for (let i = 1; i < cols; i++) {
+    el("abs", { position: "absolute", left: i * gw + "px", top: 0,
+      width: "1px", height: "100%", background: P.ink, opacity: 0.14 });
+  }
+  const c = pick(P.acc);
+  word(NAME[0], {
+    left: gw * ri(0, 1) + "px",
+    top: rnd(0.06, 0.12) * H() + "px",
+    fontSize: gw * rnd(2.4, 3.2) / NAME[0].length * 1.6 + "px",
+    color: P.ink,
+  });
+  word(NAME[1], {
+    left: gw * ri(1, 2) + "px",
+    top: rnd(0.4, 0.5) * H() + "px",
+    fontSize: gw * rnd(3.4, 4.6) / NAME[1].length * 1.6 + "px",
+    color: c,
+  });
+  // solid block in one grid cell
+  el("abs", { position: "absolute", left: gw * ri(3, 5) + "px",
+    top: rnd(0.65, 0.75) * H() + "px", width: gw + "px", height: gw * 0.6 + "px",
+    background: P.ink });
+  infoTag({ left: gw * 4 + 12 + "px", top: rnd(0.1, 0.2) * H() + "px", color: P.ink });
+  el("abs num", { position: "absolute", left: "24px", bottom: "20px", color: P.ink },
+    "1&#8211;2&#8211;3");
+}
+
+/* ============ generate ============ */
+const COMPS = [compStack, compGiant, compBauhaus, compStripes, compGrid];
+
+function generate() {
+  stage = document.getElementById("stage");
+  stage.innerHTML = "";
+  P = pick(PALETTES);
+  document.documentElement.style.setProperty("--paper", P.paper);
+  document.documentElement.style.setProperty("--ink", P.ink);
+  const comp = pick(COMPS);
+  comp();
+  document.getElementById("f-left").textContent =
+    "composition: " + comp.name.replace("comp", "").toLowerCase() + " / " + P.name;
+  document.getElementById("f-right").textContent =
+    "erik hekman · " + new Date().getFullYear();
+}
+
+window.addEventListener("resize", generate);
+document.addEventListener("keydown", e => { if (e.key === "r") generate(); });
+generate();
+</script>
+</body>
+</html>
