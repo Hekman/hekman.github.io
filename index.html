@@ -125,7 +125,6 @@
 <div id="stage"></div>
 
 <footer>
-  <span id="f-left"></span>
   <span id="f-right"></span>
 </footer>
 
@@ -155,8 +154,11 @@ const PALETTES = [
 const STRIPES = ["#7b2d8b", "#3b4fa0", "#2a9d8f", "#8ab833", "#f2c012", "#ef7d1a", "#e8442e"];
 
 const ROLES = [
-  "designer &amp; developer", "interaction design", "media technology",
-  "design research", "creative technologist", "typography &amp; code"
+  "Program Lead AI in Design &amp; Journalism",
+  "Founder MA Data-driven Design",
+  "HU University of Applied Sciences",
+  "Creative Technologist",
+  "PhD Candidate Utrecht University",
 ];
 
 let stage, P;
@@ -175,9 +177,13 @@ function word(text, css) {
 }
 
 function infoTag(css) {
-  const role = pick(ROLES);
+  const roles = shuffle(ROLES).slice(0, ri(2, 3));
   return el("abs tag", Object.assign({ position: "absolute" }, css),
-    "<b>Erik Hekman</b>" + role + "<br>&#8600; a new page on every reload");
+    "<b>Erik Hekman</b>" + roles.join("<br>"));
+}
+
+function shuffle(arr) {
+  return [...arr].sort(() => Math.random() - 0.5);
 }
 
 function W() { return stage.clientWidth; }
@@ -361,8 +367,151 @@ function compGrid() {
     "1&#8211;2&#8211;3");
 }
 
+/* ============ composition 6: müller-brockmann circles ============ */
+function compCircles() {
+  const cx = rnd(0.25, 0.75) * W();
+  const cy = rnd(0.2, 0.6) * H();
+  const n = ri(6, 10);
+  let r = rnd(0.03, 0.06) * Math.min(W(), H());
+  const grow = rnd(1.35, 1.6);
+  for (let i = 0; i < n; i++) {
+    const c = i % 3 === 0 ? pick(P.acc) : P.ink;
+    const filled = i === 0 && chance(0.6);
+    el("abs", {
+      position: "absolute",
+      left: cx - r + "px",
+      top: cy - r + "px",
+      width: r * 2 + "px",
+      height: r * 2 + "px",
+      borderRadius: "50%",
+      border: filled ? "none" : rnd(2, 9) + "px solid " + c,
+      background: filled ? c : "transparent",
+      opacity: 0.9,
+    });
+    r *= grow;
+  }
+  word(NAME.join(" "), {
+    left: "24px",
+    bottom: rnd(0.14, 0.22) * H() + "px",
+    fontSize: Math.min(W(), H()) * rnd(0.05, 0.07) + "px",
+    color: P.ink,
+    zIndex: 5,
+  });
+  el("abs tag", { position: "absolute", left: "26px",
+    bottom: rnd(0.05, 0.08) * H() + "px", color: P.ink, zIndex: 5 },
+    shuffle(ROLES).slice(0, 3).join("<br>"));
+}
+
+/* ============ composition 7: vignelli subway ============ */
+function compSubway() {
+  word(NAME.join(" "), {
+    left: "24px",
+    top: "20px",
+    fontSize: Math.min(W() * 0.085, 90) + "px",
+    color: P.ink,
+    letterSpacing: "-0.05em",
+  });
+  const lines = shuffle(ROLES);
+  const y0 = rnd(0.3, 0.38) * H();
+  const rowH = Math.min((H() - y0 - 40) / lines.length, 74);
+  const d = Math.min(rowH * 0.72, 52);
+  lines.forEach((role, i) => {
+    const c = i % 2 === 0 ? P.acc[i % P.acc.length] : P.ink;
+    const y = y0 + i * rowH;
+    el("abs", {
+      position: "absolute", left: "24px", top: y + "px",
+      width: d + "px", height: d + "px", borderRadius: "50%",
+      background: c, color: P.paper,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontWeight: "700", fontSize: d * 0.5 + "px",
+    }, role.replace(/&amp;/g, "&").trim()[0].toUpperCase());
+    el("abs", {
+      position: "absolute", left: 24 + d + 18 + "px",
+      top: y + d / 2 + "px",
+      transform: "translateY(-55%)",
+      fontWeight: "700",
+      fontSize: Math.min(d * 0.52, 26) + "px",
+      letterSpacing: "-0.02em",
+      color: P.ink,
+      whiteSpace: "nowrap",
+    }, role);
+    el("abs", {
+      position: "absolute", left: "0", right: "0",
+      top: y + rowH - 6 + "px", height: "2px",
+      background: P.ink, opacity: 0.25,
+    });
+  });
+}
+
+/* ============ composition 8: type specimen ============ */
+function compSpecimen() {
+  const text = pick([NAME.join(" "), NAME[1]]);
+  let y = rnd(0.02, 0.06) * H();
+  let size = H() * rnd(0.2, 0.26);
+  const accentRow = ri(0, 3);
+  let i = 0;
+  while (y < H() * 0.92 && size > 9) {
+    word(text, {
+      left: "24px",
+      top: y + "px",
+      fontSize: size + "px",
+      color: i === accentRow ? pick(P.acc) : P.ink,
+      letterSpacing: "-0.05em",
+    });
+    el("abs num", { position: "absolute", right: "24px", top: y + size * 0.25 + "px",
+      color: P.ink, opacity: 0.6 }, Math.round(size * 0.75) + " pt");
+    y += size * 0.95;
+    size *= rnd(0.5, 0.62);
+    i++;
+  }
+  infoTag({
+    right: "24px",
+    bottom: rnd(0.06, 0.12) * H() + "px",
+    textAlign: "right",
+    color: P.ink,
+  });
+}
+
+/* ============ composition 9: constructivist diagonal ============ */
+function compDiagonal() {
+  const angle = pick([-45, 45, -30, 30]);
+  const bars = ri(3, 5);
+  for (let i = 0; i < bars; i++) {
+    el("abs", {
+      position: "absolute",
+      left: rnd(-0.2, 0.7) * W() + "px",
+      top: rnd(-0.1, 0.9) * H() + "px",
+      width: rnd(0.5, 1.2) * W() + "px",
+      height: rnd(14, 60) + "px",
+      background: i === 0 ? P.ink : pick(P.acc),
+      transform: "rotate(" + angle + "deg)",
+      opacity: 0.92,
+    });
+  }
+  word(NAME.join(" ").toUpperCase(), {
+    left: rnd(0.08, 0.2) * W() + "px",
+    top: rnd(0.55, 0.75) * H() + "px",
+    fontSize: Math.min(W(), H()) * rnd(0.07, 0.1) + "px",
+    color: P.ink,
+    letterSpacing: "-0.02em",
+    transform: "rotate(" + angle + "deg)",
+    transformOrigin: "left bottom",
+    zIndex: 5,
+  });
+  el("abs tag", {
+    position: "absolute",
+    left: rnd(0.55, 0.68) * W() + "px",
+    top: rnd(0.12, 0.25) * H() + "px",
+    transform: "rotate(" + angle + "deg)",
+    color: P.ink,
+    fontWeight: "700",
+    zIndex: 5,
+  }, shuffle(ROLES).slice(0, 2).join("<br>"));
+}
+
 /* ============ generate ============ */
-const COMPS = [compStack, compGiant, compBauhaus, compStripes, compGrid];
+const COMPS = [compStack, compGiant, compBauhaus, compStripes, compGrid,
+               compCircles, compSubway, compSpecimen, compDiagonal];
 
 function generate() {
   stage = document.getElementById("stage");
@@ -370,10 +519,7 @@ function generate() {
   P = pick(PALETTES);
   document.documentElement.style.setProperty("--paper", P.paper);
   document.documentElement.style.setProperty("--ink", P.ink);
-  const comp = pick(COMPS);
-  comp();
-  document.getElementById("f-left").textContent =
-    "composition: " + comp.name.replace("comp", "").toLowerCase() + " / " + P.name;
+  pick(COMPS)();
   document.getElementById("f-right").textContent =
     "erik hekman · " + new Date().getFullYear();
 }
