@@ -84,7 +84,7 @@
     line-height: 1.45;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    max-width: 220px;
+    max-width: 300px;
   }
   .tag b { display: block; font-size: 12px; }
   .rule { background: var(--ink); }
@@ -446,11 +446,20 @@ function compSubway() {
 /* ============ composition 8: type specimen ============ */
 function compSpecimen() {
   const text = pick([NAME.join(" "), NAME[1]]);
-  let y = rnd(0.02, 0.06) * H();
-  let size = H() * rnd(0.2, 0.26);
-  const accentRow = ri(0, 3);
-  let i = 0;
-  while (y < H() * 0.92 && size > 9) {
+  const n = ri(5, 7);
+  const ratio = rnd(0.6, 0.7);
+  const lead = 0.94;                      // row advance as fraction of size
+  // geometric cascade, scaled so the rows exactly fill the stage height
+  let sizes = [];
+  for (let i = 0, s = 1; i < n; i++, s *= ratio) sizes.push(s);
+  const fill = H() * 0.86 / sizes.reduce((a, b) => a + b * lead, 0);
+  sizes = sizes.map(v => v * fill);
+  // cap so the largest row never overflows the width
+  const cap = (W() - 140) / (text.length * 0.48);
+  if (sizes[0] > cap) sizes = sizes.map(v => v * cap / sizes[0]);
+  const accentRow = ri(0, n - 1);
+  let y = H() * 0.05 + (H() * 0.86 - sizes.reduce((a, b) => a + b * lead, 0)) / 2;
+  sizes.forEach((size, i) => {
     word(text, {
       left: "24px",
       top: y + "px",
@@ -458,16 +467,15 @@ function compSpecimen() {
       color: i === accentRow ? pick(P.acc) : P.ink,
       letterSpacing: "-0.05em",
     });
-    el("abs num", { position: "absolute", right: "24px", top: y + size * 0.25 + "px",
+    el("abs num", { position: "absolute", right: "24px", top: y + size * 0.2 + "px",
       color: P.ink, opacity: 0.6 }, Math.round(size * 0.75) + " pt");
-    y += size * 0.95;
-    size *= rnd(0.5, 0.62);
-    i++;
-  }
+    y += size * lead;
+  });
   infoTag({
     right: "24px",
-    bottom: rnd(0.06, 0.12) * H() + "px",
+    bottom: "40px",
     textAlign: "right",
+    maxWidth: "360px",
     color: P.ink,
   });
 }
