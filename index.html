@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Erik Hekman</title>
-<meta name="description" content="Erik Hekman — personal bio. A new composition on every visit.">
+<meta name="description" content="Erik Hekman — personal bio.">
 <style>
   :root {
     --ink: #111111;
@@ -53,18 +53,6 @@
     font-weight: 500;
   }
   nav a:hover { text-decoration: underline; text-underline-offset: 4px; }
-  nav .regen {
-    cursor: pointer;
-    border: 2px solid var(--ink);
-    background: transparent;
-    color: var(--ink);
-    font: inherit;
-    font-weight: 700;
-    padding: 4px 12px;
-    text-transform: uppercase;
-  }
-  nav .regen:hover { background: var(--ink); color: var(--paper); }
-
   /* ---------- stage ---------- */
   #stage {
     position: fixed;
@@ -119,7 +107,6 @@
     <li><a href="#about">About</a></li>
     <li><a href="#contact">Contact</a></li>
   </ul>
-  <button class="regen" onclick="generate()" title="New composition">&#8635;&nbsp;Reload</button>
 </nav>
 
 <div id="stage"></div>
@@ -558,6 +545,7 @@ function generate() {
 
 window.addEventListener("resize", generate);
 document.addEventListener("keydown", e => { if (e.key === "r") generate(); });
+setInterval(generate, 2500);
 generate();
 </script>
 </body>
