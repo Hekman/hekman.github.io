@@ -189,14 +189,23 @@ function shuffle(arr) {
 /* optical alignment: distance from text origin to first inked pixel,
    so cascading sizes share the same visual left edge */
 let _mctx = null;
+const _bearing = {};
 function inkLeft(text, size) {
-  try {
-    if (!_mctx) _mctx = document.createElement("canvas").getContext("2d");
-    _mctx.font = "700 " + size + "px 'Helvetica Neue', Helvetica, Arial, sans-serif";
-    const m = _mctx.measureText(text[0]);
-    if (m.actualBoundingBoxLeft !== undefined) return -m.actualBoundingBoxLeft;
-  } catch (e) {}
-  return size * 0.07; // fallback approximation
+  const ch = text[0];
+  if (!(ch in _bearing)) {
+    let frac = 0;
+    try {
+      if (!_mctx) _mctx = document.createElement("canvas").getContext("2d");
+      _mctx.font = "700 1000px 'Helvetica Neue', Helvetica, Arial, sans-serif";
+      const m = _mctx.measureText(ch);
+      if (typeof m.actualBoundingBoxLeft === "number") {
+        // ink right of origin => actualBoundingBoxLeft is negative
+        frac = Math.max(0, Math.min(-m.actualBoundingBoxLeft / 1000, 0.12));
+      }
+    } catch (e) {}
+    _bearing[ch] = frac;
+  }
+  return _bearing[ch] * size;
 }
 
 function W() { return stage.clientWidth; }
@@ -540,7 +549,9 @@ function generate() {
   P = pick(PALETTES);
   document.documentElement.style.setProperty("--paper", P.paper);
   document.documentElement.style.setProperty("--ink", P.ink);
-  pick(COMPS)();
+  const want = (location.hash || "").slice(1).toLowerCase();
+  const forced = COMPS.find(c => c.name.toLowerCase() === "comp" + want);
+  (forced || pick(COMPS))();
   document.getElementById("f-right").textContent =
     "erik hekman · " + new Date().getFullYear();
 }
