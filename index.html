@@ -575,7 +575,7 @@ function generate() {
   requestAnimationFrame(() => requestAnimationFrame(() => layer.classList.add("on")));
   old.forEach(l => {
     l.classList.remove("on");
-    setTimeout(() => l.remove(), 1400);
+    setTimeout(() => l.remove(), 2000);
   });
 
   document.getElementById("f-right").textContent =
