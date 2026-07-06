@@ -18,6 +18,7 @@
     color: var(--ink);
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
+    transition: background-color 1.4s ease, color 1.4s ease;
   }
 
   /* ---------- menu bar ---------- */
@@ -34,6 +35,7 @@
     z-index: 100;
     font-size: 13px;
     letter-spacing: 0.02em;
+    transition: background-color 1.4s ease, border-color 1.4s ease, color 1.4s ease;
   }
   nav .brand {
     font-weight: 700;
@@ -58,6 +60,25 @@
     position: fixed;
     inset: 52px 0 0 0;
     overflow: hidden;
+  }
+  .layer {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 1.3s ease;
+    animation: drift 6.5s ease-in-out forwards;
+  }
+  .layer.on { opacity: 1; }
+  .layer > * { animation: rise 1s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  @keyframes drift {
+    from { transform: scale(1); }
+    to   { transform: scale(1.04); }
+  }
+  @keyframes rise {
+    from { opacity: 0; translate: 0 30px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .layer, .layer > * { animation: none; }
   }
   .abs { position: absolute; }
   .word {
@@ -148,14 +169,14 @@ const ROLES = [
   "PhD Candidate Utrecht University",
 ];
 
-let stage, P;
+let stage, layer, P;
 
 function el(cls, css, html) {
   const d = document.createElement("div");
   if (cls) d.className = cls;
   Object.assign(d.style, css);
   if (html !== undefined) d.innerHTML = html;
-  stage.appendChild(d);
+  (layer || stage).appendChild(d);
   return d;
 }
 
@@ -532,13 +553,31 @@ const COMPS = [compStack, compGiant, compBauhaus, compStripes, compGrid,
 
 function generate() {
   stage = document.getElementById("stage");
-  stage.innerHTML = "";
   P = pick(PALETTES);
   document.documentElement.style.setProperty("--paper", P.paper);
   document.documentElement.style.setProperty("--ink", P.ink);
+
+  // fade out previous scenes, build the new one in its own layer
+  const old = Array.from(stage.querySelectorAll(".layer"));
+  layer = document.createElement("div");
+  layer.className = "layer";
+  layer.style.transformOrigin = rnd(25, 75) + "% " + rnd(25, 75) + "%";
+  stage.appendChild(layer);
+
   const want = (location.hash || "").slice(1).toLowerCase();
   const forced = COMPS.find(c => c.name.toLowerCase() === "comp" + want);
   (forced || pick(COMPS))();
+
+  // staggered entrance for the new scene's elements
+  Array.from(layer.children).forEach((child, i) => {
+    child.style.animationDelay = (i * 70 + rnd(0, 120)) + "ms";
+  });
+  requestAnimationFrame(() => requestAnimationFrame(() => layer.classList.add("on")));
+  old.forEach(l => {
+    l.classList.remove("on");
+    setTimeout(() => l.remove(), 1400);
+  });
+
   document.getElementById("f-right").textContent =
     "erik hekman · " + new Date().getFullYear();
 }
